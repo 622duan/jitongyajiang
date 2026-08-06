@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>鸡同鸭讲 - 派对游戏</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- PeerJS for WebRTC P2P -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- Three.js for 3D rendering -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+</head>
+<body>
+    <!-- 大厅界面 -->
+    <div id="lobby-screen" class="screen active">
+        <div class="lobby-container">
+            <h1 class="title">鸡同鸭讲</h1>
+            <p class="subtitle">笑着争吵，吵着爆笑</p>
+
+            <div class="lobby-menu">
+                <div class="menu-section">
+                    <input type="text" id="player-name" placeholder="你的昵称" maxlength="12" class="input">
+                </div>
+
+                <div class="menu-section">
+                    <h3>创建房间</h3>
+                    <button id="create-room-btn" class="btn btn-primary">创建新房间</button>
+                    <div id="room-code-display" class="room-code hidden">
+                        <p>房间号：</p>
+                        <div class="code" id="generated-code"></div>
+                        <p class="hint">把这个房间号发给朋友</p>
+                    </div>
+                </div>
+
+                <div class="divider">或者</div>
+
+                <div class="menu-section">
+                    <h3>加入房间</h3>
+                    <input type="text" id="room-code-input" placeholder="输入 6 位房间号" maxlength="6" class="input code-input">
+                    <button id="join-room-btn" class="btn btn-primary">加入</button>
+                </div>
+
+                <div id="lobby-status" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 房间等待界面 -->
+    <div id="room-screen" class="screen">
+        <div class="room-container">
+            <h2>房间：<span id="room-code-show" class="code"></span></h2>
+            <p class="hint">把房间号发给朋友</p>
+
+            <div class="player-list" id="player-list">
+                <h3>玩家列表</h3>
+                <ul id="players-ul"></ul>
+            </div>
+
+            <button id="start-game-btn" class="btn btn-primary btn-large" disabled>等待玩家...</button>
+            <button id="leave-room-btn" class="btn btn-secondary">离开房间</button>
+        </div>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="game-screen" class="screen">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- HUD -->
+        <div id="hud" class="hud">
+            <div id="identity-badge" class="identity-badge">加载中...</div>
+            <div id="player-list-game" class="player-list-game"></div>
+            <div id="task-info" class="task-info hidden">
+                <h4>任务</h4>
+                <p id="task-text"></p>
+            </div>
+        </div>
+
+        <!-- 动作轮盘按钮 -->
+        <button id="action-wheel-btn" class="action-wheel-btn">动作</button>
+
+        <!-- 动作轮盘 -->
+        <div id="action-wheel" class="action-wheel hidden">
+            <div class="wheel-bg"></div>
+            <div class="wheel-options">
+                <div class="wheel-option" data-action="yes" style="--angle: 0deg;">✓<br><span>是</span></div>
+                <div class="wheel-option" data-action="no" style="--angle: 45deg;">✗<br><span>否</span></div>
+                <div class="wheel-option" data-action="up" style="--angle: 90deg;">↑<br><span>上</span></div>
+                <div class="wheel-option" data-action="right" style="--angle: 135deg;">→<br><span>右</span></div>
+                <div class="wheel-option" data-action="down" style="--angle: 180deg;">↓<br><span>下</span></div>
+                <div class="wheel-option" data-action="left" style="--angle: 225deg;">←<br><span>左</span></div>
+                <div class="wheel-option" data-action="wait" style="--angle: 270deg;">⏸<br><span>等</span></div>
+                <div class="wheel-option" data-action="help" style="--angle: 315deg;">❓<br><span>帮</span></div>
+            </div>
+        </div>
+
+        <!-- 移动摇杆（左下）-->
+        <div id="joystick-zone" class="joystick-zone"></div>
+
+        <!-- 视角控制提示（首次进入）-->
+        <div id="view-hint" class="view-hint">
+            <p>👆 拖动屏幕右侧控制视角</p>
+        </div>
+    </div>
+
+    <!-- 模块 -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
