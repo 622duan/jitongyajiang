@@ -1,0 +1,491 @@
+/* ========== 重置和基础 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    touch-action: none;
+}
+
+/* ========== 屏幕切换 ========== */
+.screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    overflow: hidden;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* ========== 大厅界面 ========== */
+#lobby-screen {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.lobby-container {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.title {
+    font-size: 56px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 4px 0 #d97706, 0 6px 20px rgba(0,0,0,0.5);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    transform: rotate(-2deg);
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 40px;
+    letter-spacing: 2px;
+}
+
+.lobby-menu {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 20px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-section {
+    margin: 20px 0;
+}
+
+.menu-section h3 {
+    font-size: 16px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input:focus {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.input::placeholder {
+    color: #64748b;
+}
+
+.code-input {
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    text-align: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background: #475569;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    margin-top: 10px;
+}
+
+.btn-large {
+    padding: 18px;
+    font-size: 18px;
+}
+
+.divider {
+    text-align: center;
+    color: #64748b;
+    margin: 24px 0;
+    font-size: 13px;
+    position: relative;
+}
+
+.divider::before, .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.room-code {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+}
+
+.room-code p {
+    color: #cbd5e1;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.code {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #ffd700;
+    font-family: "Courier New", monospace;
+    margin: 8px 0;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.status {
+    margin-top: 16px;
+    min-height: 20px;
+    font-size: 13px;
+}
+
+.status.error { color: #ef4444; }
+.status.success { color: #10b981; }
+.status.info { color: #60a5fa; }
+
+.hidden { display: none !important; }
+
+/* ========== 房间界面 ========== */
+#room-screen {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.room-container {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.room-container h2 {
+    color: #cbd5e1;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.player-list {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 24px 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-list h3 {
+    color: #94a3b8;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+#players-ul {
+    list-style: none;
+}
+
+#players-ul li {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin: 6px 0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.player-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.player-host {
+    font-size: 11px;
+    background: #ffd700;
+    color: #1a1a2e;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+/* ========== 游戏界面 ========== */
+#game-screen {
+    background: #000;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+
+.hud {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 10;
+    padding: 16px;
+}
+
+.identity-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.player-list-game {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+}
+
+.player-chip {
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    font-size: 12px;
+    color: #fff;
+    border-left: 3px solid;
+}
+
+.task-info {
+    position: fixed;
+    top: 70px;
+    left: 16px;
+    right: 16px;
+    max-width: 400px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.task-info h4 {
+    color: #ffd700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.task-info p {
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* ========== 动作轮盘 ========== */
+.action-wheel-btn {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+    z-index: 20;
+}
+
+.action-wheel-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+.action-wheel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    z-index: 30;
+    pointer-events: auto;
+}
+
+.wheel-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.wheel-options {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.wheel-option {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 64px;
+    height: 64px;
+    margin-top: -32px;
+    margin-left: -32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    transform: rotate(var(--angle)) translateY(-110px) rotate(calc(-1 * var(--angle)));
+}
+
+.wheel-option:active {
+    background: rgba(255, 215, 0, 0.3);
+    transform: rotate(var(--angle)) translateY(-110px) rotate(calc(-1 * var(--angle))) scale(1.1);
+}
+
+.wheel-option span {
+    font-size: 10px;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+/* ========== 摇杆区域 ========== */
+.joystick-zone {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 50%;
+    height: 40%;
+    z-index: 15;
+    touch-action: none;
+}
+
+/* ========== 视角提示 ========== */
+.view-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    z-index: 25;
+    text-align: center;
+    animation: fadeOut 4s forwards;
+    animation-delay: 3s;
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; pointer-events: none; }
+}
+
+/* ========== 适配小屏 ========== */
+@media (max-width: 480px) {
+    .title { font-size: 44px; }
+    .lobby-menu { padding: 18px; }
+}
