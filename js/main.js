@@ -38,21 +38,27 @@ function setStatus(text, type = 'info') {
 document.getElementById('create-room-btn').addEventListener('click', async () => {
     state.myName = document.getElementById('player-name').value.trim() || 'Player';
     setStatus('正在创建房间...', 'info');
-    
+    document.getElementById('create-room-btn').disabled = true;
+    document.getElementById('create-room-btn').textContent = '连接中...';
+
     try {
+        // 如果之前有 network，先清理
+        if (state.network) {
+            state.network.disconnect();
+            state.network = null;
+        }
         state.network = new Network();
-        
+
         // 网络事件
         state.network.onConnected = () => {
             const code = state.network.roomCode;
             document.getElementById('generated-code').textContent = code;
             document.getElementById('room-code-display').classList.remove('hidden');
-            document.getElementById('create-room-btn').textContent = '等待朋友加入...';
-            document.getElementById('create-room-btn').disabled = true;
+            document.getElementById('create-room-btn').textContent = '房间已创建';
             setStatus('房间已创建！', 'success');
             showScreen('room-screen');
             document.getElementById('room-code-show').textContent = code;
-            
+
             // 添加自己
             state.players.set(state.network.myId, {
                 name: state.myName,
@@ -62,7 +68,7 @@ document.getElementById('create-room-btn').addEventListener('click', async () =>
             updatePlayerListUI();
             updateStartButton();
         };
-        
+
         state.network.onPlayerJoined = (peerId) => {
             console.log('[Main] 玩家加入:', peerId);
             // 房主收到新玩家连接，发送欢迎消息
@@ -73,7 +79,7 @@ document.getElementById('create-room-btn').addEventListener('click', async () =>
                 }))
             });
         };
-        
+
         state.network.onPlayerLeft = (peerId) => {
             console.log('[Main] 玩家离开:', peerId);
             state.players.delete(peerId);
@@ -83,42 +89,54 @@ document.getElementById('create-room-btn').addEventListener('click', async () =>
             updatePlayerListUI();
             updateStartButton();
         };
-        
+
         state.network.onMessage = (fromId, type, payload) => {
             handleNetworkMessage(fromId, type, payload);
         };
-        
+
         state.network.onError = (err) => {
-            setStatus('错误：' + err.type, 'error');
-            console.error(err);
+            const msg = err.friendlyMessage || err.message || ('错误: ' + (err.type || 'unknown'));
+            setStatus(msg, 'error');
+            console.error('[Main] 网络错误:', err);
+            // 重置按钮
+            document.getElementById('create-room-btn').disabled = false;
+            document.getElementById('create-room-btn').textContent = '重试创建房间';
         };
-        
+
         await state.network.createRoom();
     } catch (err) {
-        setStatus('创建失败：' + err.message, 'error');
-        console.error(err);
+        const msg = err.friendlyMessage || err.message || '创建失败';
+        setStatus(msg, 'error');
+        console.error('[Main] 创建失败:', err);
+        document.getElementById('create-room-btn').disabled = false;
+        document.getElementById('create-room-btn').textContent = '重试创建房间';
     }
 });
 
 document.getElementById('join-room-btn').addEventListener('click', async () => {
     state.myName = document.getElementById('player-name').value.trim() || 'Player';
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-    
+
     if (code.length !== 6) {
         setStatus('请输入 6 位房间号', 'error');
         return;
     }
-    
+
     setStatus('正在加入...', 'info');
-    
+    document.getElementById('join-room-btn').disabled = true;
+    document.getElementById('join-room-btn').textContent = '连接中...';
+
     try {
+        if (state.network) {
+            state.network.disconnect();
+            state.network = null;
+        }
         state.network = new Network();
-        
+
         state.network.onConnected = () => {
             setStatus('已加入房间！', 'success');
             showScreen('room-screen');
             document.getElementById('room-code-show').textContent = code;
-            // 自己加入
             state.players.set(state.network.myId, {
                 name: state.myName,
                 color: PLAYER_COLORS[state.players.size],
@@ -126,7 +144,7 @@ document.getElementById('join-room-btn').addEventListener('click', async () => {
             });
             updatePlayerListUI();
         };
-        
+
         state.network.onPlayerLeft = (peerId) => {
             state.players.delete(peerId);
             if (state.scene) {
@@ -134,20 +152,26 @@ document.getElementById('join-room-btn').addEventListener('click', async () => {
             }
             updatePlayerListUI();
         };
-        
+
         state.network.onMessage = (fromId, type, payload) => {
             handleNetworkMessage(fromId, type, payload);
         };
-        
+
         state.network.onError = (err) => {
-            setStatus('加入失败：' + err.type, 'error');
-            console.error(err);
+            const msg = err.friendlyMessage || err.message || ('错误: ' + (err.type || 'unknown'));
+            setStatus(msg, 'error');
+            console.error('[Main] 网络错误:', err);
+            document.getElementById('join-room-btn').disabled = false;
+            document.getElementById('join-room-btn').textContent = '重试加入';
         };
-        
+
         await state.network.joinRoom(code);
     } catch (err) {
-        setStatus('加入失败：' + err.message, 'error');
-        console.error(err);
+        const msg = err.friendlyMessage || err.message || '加入失败';
+        setStatus(msg, 'error');
+        console.error('[Main] 加入失败:', err);
+        document.getElementById('join-room-btn').disabled = false;
+        document.getElementById('join-room-btn').textContent = '重试加入';
     }
 });
 
