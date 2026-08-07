@@ -7,7 +7,8 @@
 // - 玩家角色渲染（远端玩家用彩色立方体）
 // - 简单的厨房环境（W1 占位）
 
-import * as THREE from 'three';
+// Three.js 通过 <script> 标签加载，全局可用
+// 注意：不要用 import 'three'，会破坏整个模块链
 
 export class GameScene {
     constructor(canvas) {
