@@ -9,6 +9,27 @@ import { Network } from './network.js';
 import { GameScene } from './scene.js';
 import { InputController } from './controls.js';
 
+// ========== 全局错误捕获（显示在页面上，方便调试）==========
+window.addEventListener('error', (e) => {
+    console.error('[Global Error]', e.error);
+    const debugEl = document.getElementById('debug-overlay');
+    if (debugEl) {
+        debugEl.style.display = 'block';
+        debugEl.textContent = '❌ JS 错误: ' + (e.message || e.error?.message || 'unknown');
+    }
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('[Unhandled Rejection]', e.reason);
+    const debugEl = document.getElementById('debug-overlay');
+    if (debugEl) {
+        debugEl.style.display = 'block';
+        debugEl.textContent = '❌ Promise 错误: ' + (e.reason?.message || e.reason);
+    }
+});
+
+console.log('[Main] ✅ JS 已加载，准备就绪');
+
 // 全局状态
 const state = {
     network: null,
