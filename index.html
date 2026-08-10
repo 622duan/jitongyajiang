@@ -1,133 +1,606 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1a1a2e">
-<title>鸡同鸭讲 - 派对游戏</title>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:#1a1a2e; color:#eee; touch-action:none; }
-.screen { position:fixed; top:0; left:0; width:100%; height:100%; display:none; }
-.screen.active { display:flex; }
-#lobby-screen { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); align-items:center; justify-content:center; padding:20px; }
-.lobby-container { width:100%; max-width:400px; text-align:center; }
-.title { font-size:48px; font-weight:900; color:#ffd700; text-shadow:0 4px 0 #d97706,0 6px 20px rgba(0,0,0,0.5); letter-spacing:4px; margin-bottom:8px; }
-.subtitle { font-size:13px; color:#94a3b8; margin-bottom:30px; letter-spacing:2px; }
-.lobby-menu { background:rgba(0,0,0,0.3); border-radius:20px; padding:20px; border:1px solid rgba(255,255,255,0.1); }
-.menu-section { margin:16px 0; }
-.menu-section h3 { font-size:15px; color:#cbd5e1; margin-bottom:10px; }
-.input { width:100%; padding:12px 14px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:#fff; font-size:15px; outline:none; }
-.input:focus { border-color:#ffd700; }
-.input::placeholder { color:#64748b; }
-.code-input { text-transform:uppercase; letter-spacing:3px; font-weight:700; text-align:center; font-size:18px; margin-bottom:10px; }
-.btn { width:100%; padding:12px 16px; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
-.btn-primary { background:linear-gradient(135deg,#ffd700 0%,#f59e0b 100%); color:#1a1a2e; box-shadow:0 4px 12px rgba(255,215,0,0.3); }
-.btn-primary:active { transform:scale(0.97); }
-.btn-primary:disabled { background:#475569; color:#94a3b8; cursor:not-allowed; }
-.btn-secondary { background:rgba(255,255,255,0.08); color:#cbd5e1; margin-top:8px; }
-.divider { text-align:center; color:#64748b; margin:18px 0; font-size:12px; }
-.status { margin-top:14px; min-height:20px; font-size:13px; word-break:break-word; }
-.status.error { color:#ef4444; }
-.status.success { color:#10b981; }
-.status.info { color:#60a5fa; }
-.hidden { display:none !important; }
-.room-code { margin-top:12px; padding:14px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); border-radius:10px; }
-.room-code p { color:#cbd5e1; font-size:12px; margin-bottom:6px; }
-.code { font-size:28px; font-weight:900; letter-spacing:5px; color:#ffd700; font-family:monospace; }
-.hint { color:#94a3b8; font-size:11px; margin-top:6px; }
-#room-screen { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); align-items:center; justify-content:center; padding:20px; }
-.room-container { width:100%; max-width:400px; text-align:center; }
-.room-container h2 { color:#cbd5e1; font-size:18px; margin-bottom:6px; }
-.player-list { background:rgba(0,0,0,0.3); border-radius:16px; padding:16px; margin:20px 0; border:1px solid rgba(255,255,255,0.1); text-align:left; }
-.player-list h3 { color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
-#players-ul { list-style:none; }
-#players-ul li { padding:10px 14px; background:rgba(255,255,255,0.05); border-radius:8px; margin:5px 0; display:flex; justify-content:space-between; align-items:center; }
-.player-color { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; }
-.player-host { font-size:10px; background:#ffd700; color:#1a1a2e; padding:2px 6px; border-radius:3px; font-weight:700; }
-#game-screen { background:#000; }
-#game-canvas { width:100%; height:100%; display:block; touch-action:none; }
-.hud { position:fixed; top:0; left:0; width:100%; pointer-events:none; z-index:10; padding:14px; }
-.identity-badge { display:inline-block; padding:6px 12px; background:rgba(0,0,0,0.6); border-radius:16px; font-size:13px; font-weight:700; color:#ffd700; }
-.player-list-game { position:fixed; top:14px; right:14px; display:flex; flex-direction:column; gap:4px; z-index:10; }
-.player-chip { padding:3px 8px; background:rgba(0,0,0,0.5); border-radius:10px; font-size:11px; color:#fff; border-left:3px solid; }
-.action-wheel-btn { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#ffd700 0%,#f59e0b 100%); color:#1a1a2e; border:none; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(255,215,0,0.4); z-index:20; }
-.action-wheel { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:300px; height:300px; z-index:30; }
-.wheel-bg { position:absolute; width:100%; height:100%; background:rgba(0,0,0,0.5); border-radius:50%; border:2px solid rgba(255,215,0,0.3); }
-.wheel-options { position:absolute; width:100%; height:100%; }
-.wheel-option { position:absolute; top:50%; left:50%; width:56px; height:56px; margin-top:-28px; margin-left:-28px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-size:18px; cursor:pointer; transform:rotate(var(--angle)) translateY(-100px) rotate(calc(-1*var(--angle))); }
-.wheel-option span { font-size:9px; margin-top:1px; opacity:0.8; }
-.joystick-zone { position:fixed; bottom:0; left:0; width:50%; height:40%; z-index:15; touch-action:none; }
-.debug-overlay { display:none; position:fixed; top:0; left:0; right:0; padding:10px 14px; background:rgba(220,38,38,0.95); color:#fff; font-size:13px; z-index:9999; font-family:monospace; word-break:break-word; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>鸡同鸭讲 - 派对游戏</title>
+    <style>/* ========== 重置和基础 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    touch-action: none;
+}
+
+/* ========== 屏幕切换 ========== */
+.screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    overflow: hidden;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* ========== 大厅界面 ========== */
+#lobby-screen {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.lobby-container {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.title {
+    font-size: 56px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 4px 0 #d97706, 0 6px 20px rgba(0,0,0,0.5);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    transform: rotate(-2deg);
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 40px;
+    letter-spacing: 2px;
+}
+
+.lobby-menu {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 20px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-section {
+    margin: 20px 0;
+}
+
+.menu-section h3 {
+    font-size: 16px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input:focus {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.input::placeholder {
+    color: #64748b;
+}
+
+.code-input {
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    text-align: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background: #475569;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    margin-top: 10px;
+}
+
+.btn-large {
+    padding: 18px;
+    font-size: 18px;
+}
+
+.divider {
+    text-align: center;
+    color: #64748b;
+    margin: 24px 0;
+    font-size: 13px;
+    position: relative;
+}
+
+.divider::before, .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.room-code {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+}
+
+.room-code p {
+    color: #cbd5e1;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.code {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #ffd700;
+    font-family: "Courier New", monospace;
+    margin: 8px 0;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.status {
+    margin-top: 16px;
+    min-height: 20px;
+    font-size: 13px;
+}
+
+.status.error { color: #ef4444; }
+.status.success { color: #10b981; }
+.status.info { color: #60a5fa; }
+
+.hidden { display: none !important; }
+
+/* ========== 房间界面 ========== */
+#room-screen {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.room-container {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.room-container h2 {
+    color: #cbd5e1;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.player-list {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 24px 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-list h3 {
+    color: #94a3b8;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+#players-ul {
+    list-style: none;
+}
+
+#players-ul li {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin: 6px 0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.player-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.player-host {
+    font-size: 11px;
+    background: #ffd700;
+    color: #1a1a2e;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+/* ========== 游戏界面 ========== */
+#game-screen {
+    background: #000;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+
+.hud {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 10;
+    padding: 16px;
+}
+
+.identity-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.player-list-game {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+}
+
+.player-chip {
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    font-size: 12px;
+    color: #fff;
+    border-left: 3px solid;
+}
+
+.task-info {
+    position: fixed;
+    top: 70px;
+    left: 16px;
+    right: 16px;
+    max-width: 400px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.task-info h4 {
+    color: #ffd700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.task-info p {
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* ========== 动作轮盘 ========== */
+.action-wheel-btn {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+    z-index: 20;
+}
+
+.action-wheel-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+.action-wheel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    z-index: 30;
+    pointer-events: auto;
+}
+
+.wheel-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.wheel-options {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.wheel-option {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 64px;
+    height: 64px;
+    margin-top: -32px;
+    margin-left: -32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    transform: rotate(var(--angle)) translateY(-110px) rotate(calc(-1 * var(--angle)));
+}
+
+.wheel-option:active {
+    background: rgba(255, 215, 0, 0.3);
+    transform: rotate(var(--angle)) translateY(-110px) rotate(calc(-1 * var(--angle))) scale(1.1);
+}
+
+.wheel-option span {
+    font-size: 10px;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+/* ========== 摇杆区域 ========== */
+.joystick-zone {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 50%;
+    height: 40%;
+    z-index: 15;
+    touch-action: none;
+}
+
+/* ========== 视角提示 ========== */
+.view-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    z-index: 25;
+    text-align: center;
+    animation: fadeOut 4s forwards;
+    animation-delay: 3s;
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; pointer-events: none; }
+}
+
+/* ========== 适配小屏 ========== */
+@media (max-width: 480px) {
+    .title { font-size: 44px; }
+    .lobby-menu { padding: 18px; }
+}
 </style>
+    <!-- PeerJS for WebRTC P2P -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- Three.js for 3D rendering -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
-<div id="debug-overlay" class="debug-overlay"></div>
-<div id="lobby-screen" class="screen active">
-<div class="lobby-container">
-<h1 class="title">鸡同鸭讲</h1>
-<p class="subtitle">笑着争吵 · 吵着爆笑</p>
-<div class="lobby-menu">
-<div class="menu-section">
-<input type="text" id="player-name" placeholder="你的昵称" maxlength="12" class="input">
-</div>
-<div class="menu-section">
-<h3>创建房间</h3>
-<button id="create-room-btn" class="btn btn-primary">创建新房间</button>
-<div id="room-code-display" class="room-code hidden">
-<p>房间号：</p>
-<div class="code" id="generated-code"></div>
-<p class="hint">把房间号发给朋友</p>
-</div>
-</div>
-<div class="divider">或者</div>
-<div class="menu-section">
-<h3>加入房间</h3>
-<input type="text" id="room-code-input" placeholder="输入 6 位房间号" maxlength="6" class="input code-input">
-<button id="join-room-btn" class="btn btn-primary">加入</button>
-</div>
-<div id="lobby-status" class="status"></div>
-</div>
-</div>
-</div>
-<div id="room-screen" class="screen">
-<div class="room-container">
-<h2>房间：<span id="room-code-show" class="code"></span></h2>
-<p class="hint">把房间号发给朋友</p>
-<div class="player-list">
-<h3>玩家列表</h3>
-<ul id="players-ul"></ul>
-</div>
-<button id="start-game-btn" class="btn btn-primary" disabled>等待玩家...</button>
-<button id="leave-room-btn" class="btn btn-secondary">离开房间</button>
-</div>
-</div>
-<div id="game-screen" class="screen">
-<canvas id="game-canvas"></canvas>
-<div class="hud">
-<div id="identity-badge" class="identity-badge">加载中...</div>
-</div>
-<div id="player-list-game" class="player-list-game"></div>
-<button id="action-wheel-btn" class="action-wheel-btn">动作</button>
-<div id="action-wheel" class="action-wheel hidden">
-<div class="wheel-bg"></div>
-<div class="wheel-options">
-<div class="wheel-option" data-action="yes" style="--angle:0deg;">✓<br><span>是</span></div>
-<div class="wheel-option" data-action="no" style="--angle:45deg;">✗<br><span>否</span></div>
-<div class="wheel-option" data-action="up" style="--angle:90deg;">↑<br><span>上</span></div>
-<div class="wheel-option" data-action="right" style="--angle:135deg;">→<br><span>右</span></div>
-<div class="wheel-option" data-action="down" style="--angle:180deg;">↓<br><span>下</span></div>
-<div class="wheel-option" data-action="left" style="--angle:225deg;">←<br><span>左</span></div>
-<div class="wheel-option" data-action="wait" style="--angle:270deg;">⏸<br><span>等</span></div>
-<div class="wheel-option" data-action="help" style="--angle:315deg;">❓<br><span>帮</span></div>
-</div>
-</div>
-<div id="joystick-zone" class="joystick-zone"></div>
-</div>
+    <!-- 调试覆盖层 -->
+    <div id="debug-overlay" style="display:none; position:fixed; top:0; left:0; right:0; padding:12px 16px; background:rgba(220,38,38,0.95); color:#fff; font-size:14px; z-index:9999; font-family:monospace;"></div>
 
-<script>
+    <!-- 大厅界面 -->
+    <div id="lobby-screen" class="screen active">
+        <div class="lobby-container">
+            <h1 class="title">鸡同鸭讲</h1>
+            <p class="subtitle">笑着争吵，吵着爆笑</p>
+
+            <div class="lobby-menu">
+                <div class="menu-section">
+                    <input type="text" id="player-name" placeholder="你的昵称" maxlength="12" class="input">
+                </div>
+
+                <div class="menu-section">
+                    <h3>创建房间</h3>
+                    <button id="create-room-btn" class="btn btn-primary">创建新房间</button>
+                    <div id="room-code-display" class="room-code hidden">
+                        <p>房间号：</p>
+                        <div class="code" id="generated-code"></div>
+                        <p class="hint">把这个房间号发给朋友</p>
+                    </div>
+                </div>
+
+                <div class="divider">或者</div>
+
+                <div class="menu-section">
+                    <h3>加入房间</h3>
+                    <input type="text" id="room-code-input" placeholder="输入 6 位房间号" maxlength="6" class="input code-input">
+                    <button id="join-room-btn" class="btn btn-primary">加入</button>
+                </div>
+
+                <div id="lobby-status" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 房间等待界面 -->
+    <div id="room-screen" class="screen">
+        <div class="room-container">
+            <h2>房间：<span id="room-code-show" class="code"></span></h2>
+            <p class="hint">把房间号发给朋友</p>
+
+            <div class="player-list" id="player-list">
+                <h3>玩家列表</h3>
+                <ul id="players-ul"></ul>
+            </div>
+
+            <button id="start-game-btn" class="btn btn-primary btn-large" disabled>等待玩家...</button>
+            <button id="leave-room-btn" class="btn btn-secondary">离开房间</button>
+        </div>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="game-screen" class="screen">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- HUD -->
+        <div id="hud" class="hud">
+            <div id="identity-badge" class="identity-badge">加载中...</div>
+            <div id="player-list-game" class="player-list-game"></div>
+            <div id="task-info" class="task-info hidden">
+                <h4>任务</h4>
+                <p id="task-text"></p>
+            </div>
+        </div>
+
+        <!-- 动作轮盘按钮 -->
+        <button id="action-wheel-btn" class="action-wheel-btn">动作</button>
+
+        <!-- 动作轮盘 -->
+        <div id="action-wheel" class="action-wheel hidden">
+            <div class="wheel-bg"></div>
+            <div class="wheel-options">
+                <div class="wheel-option" data-action="yes" style="--angle: 0deg;">✓<br><span>是</span></div>
+                <div class="wheel-option" data-action="no" style="--angle: 45deg;">✗<br><span>否</span></div>
+                <div class="wheel-option" data-action="up" style="--angle: 90deg;">↑<br><span>上</span></div>
+                <div class="wheel-option" data-action="right" style="--angle: 135deg;">→<br><span>右</span></div>
+                <div class="wheel-option" data-action="down" style="--angle: 180deg;">↓<br><span>下</span></div>
+                <div class="wheel-option" data-action="left" style="--angle: 225deg;">←<br><span>左</span></div>
+                <div class="wheel-option" data-action="wait" style="--angle: 270deg;">⏸<br><span>等</span></div>
+                <div class="wheel-option" data-action="help" style="--angle: 315deg;">❓<br><span>帮</span></div>
+            </div>
+        </div>
+
+        <!-- 移动摇杆（左下）-->
+        <div id="joystick-zone" class="joystick-zone"></div>
+
+        <!-- 视角控制提示（首次进入）-->
+        <div id="view-hint" class="view-hint">
+            <p>👆 拖动屏幕右侧控制视角</p>
+        </div>
+    </div>
+
+    <!-- 模块 -->
+<script>window.addEventListener("error",function(e){var d=document.getElementById("debug-overlay");if(d){d.style.display="block";d.textContent="E: "+(e.message||"err");}});window.addEventListener("unhandledrejection",function(e){var d=document.getElementById("debug-overlay");if(d){d.style.display="block";d.textContent="P: "+((e.reason&&e.reason.message)||e.reason||"err");}});console.log("[I] start");
 // 网络层 - 基于 PeerJS 的 WebRTC P2P 联机
 //
 // 房间号机制：
@@ -138,7 +611,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,
 // ⚠️ 已知问题：中国大陆访问 peerjs.com 公共 broker 可能不稳定
 // 如果一直报 'network' 或 'server-error'，可以尝试切换 BROKER 配置
 
-window.PREFIX = const PREFIX = 'jtyj-';  // 鸡同鸭讲 prefix，避免和其他人冲突
+const PREFIX = 'jtyj-';  // 鸡同鸭讲 prefix，避免和其他人冲突
 
 // PeerJS 公共 broker 配置
 // 备选：'broker.peerjs.com' (官方), 'peerjs.meteor.com' (镜像)
@@ -155,7 +628,7 @@ const ICE_SERVERS = [
     { urls: 'stun:stun.chat.bilibili.com:3478' }, // B 站 STUN
 ];
 
-window.Network = class Network {
+class Network {
     constructor() {
         this.peer = null;
         this.connections = new Map();
@@ -431,6 +904,7 @@ window.Network = class Network {
         this._safeDestroyPeer();
     }
 }
+
 // 3D 场景 - Three.js 第一视角
 // 
 // 包含：
@@ -443,7 +917,7 @@ window.Network = class Network {
 // Three.js 通过 <script> 标签加载，全局可用
 // 注意：不要用 import 'three'，会破坏整个模块链
 
-window.GameScene = class GameScene {
+class GameScene {
     constructor(canvas) {
         this.canvas = canvas;
         this.scene = null;
@@ -809,6 +1283,7 @@ window.GameScene = class GameScene {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 }
+
 // 移动端 + PC 输入控制
 // 
 // 移动端：
@@ -819,7 +1294,7 @@ window.GameScene = class GameScene {
 // - WASD 移动
 // - 鼠标拖动视角
 
-window.InputController = class InputController {
+class InputController {
     constructor(canvas, joystickZone) {
         this.canvas = canvas;
         this.joystickZone = joystickZone;
@@ -967,12 +1442,16 @@ window.InputController = class InputController {
         this.updateMoveInput(0, 0);
     }
 }
+
 // 主入口 - 整合所有模块
 // 
 // 流程：
 // 1. 大厅界面：创建/加入房间
 // 2. 房间界面：等待玩家，房主点开始
 // 3. 游戏界面：3D 第一视角 + 联机
+
+
+
 
 
 // ========== 全局错误捕获（显示在页面上，方便调试）==========
@@ -1034,7 +1513,7 @@ document.getElementById('create-room-btn').addEventListener('click', async () =>
             state.network.disconnect();
             state.network = null;
         }
-        state.network = new window.Network();
+        state.network = new Network();
 
         // 网络事件
         state.network.onConnected = () => {
@@ -1118,7 +1597,7 @@ document.getElementById('join-room-btn').addEventListener('click', async () => {
             state.network.disconnect();
             state.network = null;
         }
-        state.network = new window.Network();
+        state.network = new Network();
 
         state.network.onConnected = () => {
             setStatus('已加入房间！', 'success');
@@ -1306,7 +1785,7 @@ function startGame(identity) {
     
     // 初始化 3D 场景
     const canvas = document.getElementById('game-canvas');
-    state.scene = new window.GameScene(canvas);
+    state.scene = new GameScene(canvas);
     state.scene.init();
     
     // 创建远端玩家
@@ -1317,7 +1796,7 @@ function startGame(identity) {
     });
     
     // 输入
-    state.input = new window.InputController(canvas, document.getElementById('joystick-zone'));
+    state.input = new InputController(canvas, document.getElementById('joystick-zone'));
     state.input.onMove = (x, y) => state.scene.setMoveInput(x, y);
     state.input.onLook = (dx, dy) => state.scene.setLookInput(dx, dy);
     
@@ -1397,5 +1876,6 @@ function showActionIndicator(peerId, action) {
         setTimeout(() => toast.remove(), 500);
     }, 1000);
 }
-</script>
-</body></html>
+
+</script></body>
+</html>
