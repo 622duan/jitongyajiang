@@ -1,114 +1,1401 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1a1a2e">
-    <title>鸡同鸭讲 - 派对游戏</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- PeerJS for WebRTC P2P -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <!-- Three.js for 3D rendering -->
-    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>鸡同鸭讲 - 派对游戏</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:#1a1a2e; color:#eee; touch-action:none; }
+.screen { position:fixed; top:0; left:0; width:100%; height:100%; display:none; }
+.screen.active { display:flex; }
+#lobby-screen { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); align-items:center; justify-content:center; padding:20px; }
+.lobby-container { width:100%; max-width:400px; text-align:center; }
+.title { font-size:48px; font-weight:900; color:#ffd700; text-shadow:0 4px 0 #d97706,0 6px 20px rgba(0,0,0,0.5); letter-spacing:4px; margin-bottom:8px; }
+.subtitle { font-size:13px; color:#94a3b8; margin-bottom:30px; letter-spacing:2px; }
+.lobby-menu { background:rgba(0,0,0,0.3); border-radius:20px; padding:20px; border:1px solid rgba(255,255,255,0.1); }
+.menu-section { margin:16px 0; }
+.menu-section h3 { font-size:15px; color:#cbd5e1; margin-bottom:10px; }
+.input { width:100%; padding:12px 14px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:#fff; font-size:15px; outline:none; }
+.input:focus { border-color:#ffd700; }
+.input::placeholder { color:#64748b; }
+.code-input { text-transform:uppercase; letter-spacing:3px; font-weight:700; text-align:center; font-size:18px; margin-bottom:10px; }
+.btn { width:100%; padding:12px 16px; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
+.btn-primary { background:linear-gradient(135deg,#ffd700 0%,#f59e0b 100%); color:#1a1a2e; box-shadow:0 4px 12px rgba(255,215,0,0.3); }
+.btn-primary:active { transform:scale(0.97); }
+.btn-primary:disabled { background:#475569; color:#94a3b8; cursor:not-allowed; }
+.btn-secondary { background:rgba(255,255,255,0.08); color:#cbd5e1; margin-top:8px; }
+.divider { text-align:center; color:#64748b; margin:18px 0; font-size:12px; }
+.status { margin-top:14px; min-height:20px; font-size:13px; word-break:break-word; }
+.status.error { color:#ef4444; }
+.status.success { color:#10b981; }
+.status.info { color:#60a5fa; }
+.hidden { display:none !important; }
+.room-code { margin-top:12px; padding:14px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); border-radius:10px; }
+.room-code p { color:#cbd5e1; font-size:12px; margin-bottom:6px; }
+.code { font-size:28px; font-weight:900; letter-spacing:5px; color:#ffd700; font-family:monospace; }
+.hint { color:#94a3b8; font-size:11px; margin-top:6px; }
+#room-screen { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); align-items:center; justify-content:center; padding:20px; }
+.room-container { width:100%; max-width:400px; text-align:center; }
+.room-container h2 { color:#cbd5e1; font-size:18px; margin-bottom:6px; }
+.player-list { background:rgba(0,0,0,0.3); border-radius:16px; padding:16px; margin:20px 0; border:1px solid rgba(255,255,255,0.1); text-align:left; }
+.player-list h3 { color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+#players-ul { list-style:none; }
+#players-ul li { padding:10px 14px; background:rgba(255,255,255,0.05); border-radius:8px; margin:5px 0; display:flex; justify-content:space-between; align-items:center; }
+.player-color { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; }
+.player-host { font-size:10px; background:#ffd700; color:#1a1a2e; padding:2px 6px; border-radius:3px; font-weight:700; }
+#game-screen { background:#000; }
+#game-canvas { width:100%; height:100%; display:block; touch-action:none; }
+.hud { position:fixed; top:0; left:0; width:100%; pointer-events:none; z-index:10; padding:14px; }
+.identity-badge { display:inline-block; padding:6px 12px; background:rgba(0,0,0,0.6); border-radius:16px; font-size:13px; font-weight:700; color:#ffd700; }
+.player-list-game { position:fixed; top:14px; right:14px; display:flex; flex-direction:column; gap:4px; z-index:10; }
+.player-chip { padding:3px 8px; background:rgba(0,0,0,0.5); border-radius:10px; font-size:11px; color:#fff; border-left:3px solid; }
+.action-wheel-btn { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#ffd700 0%,#f59e0b 100%); color:#1a1a2e; border:none; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(255,215,0,0.4); z-index:20; }
+.action-wheel { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:300px; height:300px; z-index:30; }
+.wheel-bg { position:absolute; width:100%; height:100%; background:rgba(0,0,0,0.5); border-radius:50%; border:2px solid rgba(255,215,0,0.3); }
+.wheel-options { position:absolute; width:100%; height:100%; }
+.wheel-option { position:absolute; top:50%; left:50%; width:56px; height:56px; margin-top:-28px; margin-left:-28px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-size:18px; cursor:pointer; transform:rotate(var(--angle)) translateY(-100px) rotate(calc(-1*var(--angle))); }
+.wheel-option span { font-size:9px; margin-top:1px; opacity:0.8; }
+.joystick-zone { position:fixed; bottom:0; left:0; width:50%; height:40%; z-index:15; touch-action:none; }
+.debug-overlay { display:none; position:fixed; top:0; left:0; right:0; padding:10px 14px; background:rgba(220,38,38,0.95); color:#fff; font-size:13px; z-index:9999; font-family:monospace; word-break:break-word; }
+</style>
 </head>
 <body>
-    <!-- 调试覆盖层 -->
-    <div id="debug-overlay" style="display:none; position:fixed; top:0; left:0; right:0; padding:12px 16px; background:rgba(220,38,38,0.95); color:#fff; font-size:14px; z-index:9999; font-family:monospace;"></div>
+<div id="debug-overlay" class="debug-overlay"></div>
+<div id="lobby-screen" class="screen active">
+<div class="lobby-container">
+<h1 class="title">鸡同鸭讲</h1>
+<p class="subtitle">笑着争吵 · 吵着爆笑</p>
+<div class="lobby-menu">
+<div class="menu-section">
+<input type="text" id="player-name" placeholder="你的昵称" maxlength="12" class="input">
+</div>
+<div class="menu-section">
+<h3>创建房间</h3>
+<button id="create-room-btn" class="btn btn-primary">创建新房间</button>
+<div id="room-code-display" class="room-code hidden">
+<p>房间号：</p>
+<div class="code" id="generated-code"></div>
+<p class="hint">把房间号发给朋友</p>
+</div>
+</div>
+<div class="divider">或者</div>
+<div class="menu-section">
+<h3>加入房间</h3>
+<input type="text" id="room-code-input" placeholder="输入 6 位房间号" maxlength="6" class="input code-input">
+<button id="join-room-btn" class="btn btn-primary">加入</button>
+</div>
+<div id="lobby-status" class="status"></div>
+</div>
+</div>
+</div>
+<div id="room-screen" class="screen">
+<div class="room-container">
+<h2>房间：<span id="room-code-show" class="code"></span></h2>
+<p class="hint">把房间号发给朋友</p>
+<div class="player-list">
+<h3>玩家列表</h3>
+<ul id="players-ul"></ul>
+</div>
+<button id="start-game-btn" class="btn btn-primary" disabled>等待玩家...</button>
+<button id="leave-room-btn" class="btn btn-secondary">离开房间</button>
+</div>
+</div>
+<div id="game-screen" class="screen">
+<canvas id="game-canvas"></canvas>
+<div class="hud">
+<div id="identity-badge" class="identity-badge">加载中...</div>
+</div>
+<div id="player-list-game" class="player-list-game"></div>
+<button id="action-wheel-btn" class="action-wheel-btn">动作</button>
+<div id="action-wheel" class="action-wheel hidden">
+<div class="wheel-bg"></div>
+<div class="wheel-options">
+<div class="wheel-option" data-action="yes" style="--angle:0deg;">✓<br><span>是</span></div>
+<div class="wheel-option" data-action="no" style="--angle:45deg;">✗<br><span>否</span></div>
+<div class="wheel-option" data-action="up" style="--angle:90deg;">↑<br><span>上</span></div>
+<div class="wheel-option" data-action="right" style="--angle:135deg;">→<br><span>右</span></div>
+<div class="wheel-option" data-action="down" style="--angle:180deg;">↓<br><span>下</span></div>
+<div class="wheel-option" data-action="left" style="--angle:225deg;">←<br><span>左</span></div>
+<div class="wheel-option" data-action="wait" style="--angle:270deg;">⏸<br><span>等</span></div>
+<div class="wheel-option" data-action="help" style="--angle:315deg;">❓<br><span>帮</span></div>
+</div>
+</div>
+<div id="joystick-zone" class="joystick-zone"></div>
+</div>
 
-    <!-- 大厅界面 -->
-    <div id="lobby-screen" class="screen active">
-        <div class="lobby-container">
-            <h1 class="title">鸡同鸭讲</h1>
-            <p class="subtitle">笑着争吵，吵着爆笑</p>
+<script>
+// 网络层 - 基于 PeerJS 的 WebRTC P2P 联机
+//
+// 房间号机制：
+// - 房主：使用房间号作为 Peer ID（例：jtyj-ABC123）
+// - 朋友：使用相同 Peer ID 连接
+// - PeerJS 免费公共 broker 处理信令
+//
+// ⚠️ 已知问题：中国大陆访问 peerjs.com 公共 broker 可能不稳定
+// 如果一直报 'network' 或 'server-error'，可以尝试切换 BROKER 配置
 
-            <div class="lobby-menu">
-                <div class="menu-section">
-                    <input type="text" id="player-name" placeholder="你的昵称" maxlength="12" class="input">
-                </div>
+window.PREFIX = const PREFIX = 'jtyj-';  // 鸡同鸭讲 prefix，避免和其他人冲突
 
-                <div class="menu-section">
-                    <h3>创建房间</h3>
-                    <button id="create-room-btn" class="btn btn-primary">创建新房间</button>
-                    <div id="room-code-display" class="room-code hidden">
-                        <p>房间号：</p>
-                        <div class="code" id="generated-code"></div>
-                        <p class="hint">把这个房间号发给朋友</p>
-                    </div>
-                </div>
+// PeerJS 公共 broker 配置
+// 备选：'broker.peerjs.com' (官方), 'peerjs.meteor.com' (镜像)
+const BROKER_HOST = '0.peerjs.com';
+const BROKER_PORT = 443;
+const BROKER_PATH = '/';
+const BROKER_KEY = 'peerjs';
 
-                <div class="divider">或者</div>
+// ICE 服务器配置（STUN）
+// 默认 Google 的 STUN 在国内可能不通，换成一些备选
+const ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun.miwifi.com:3478' },      // 小米路由器 STUN，国内可访问
+    { urls: 'stun:stun.chat.bilibili.com:3478' }, // B 站 STUN
+];
 
-                <div class="menu-section">
-                    <h3>加入房间</h3>
-                    <input type="text" id="room-code-input" placeholder="输入 6 位房间号" maxlength="6" class="input code-input">
-                    <button id="join-room-btn" class="btn btn-primary">加入</button>
-                </div>
+window.Network = class Network {
+    constructor() {
+        this.peer = null;
+        this.connections = new Map();
+        this.myId = null;
+        this.isHost = false;
+        this.roomCode = null;
+        this.connectTimeout = null;
 
-                <div id="lobby-status" class="status"></div>
-            </div>
-        </div>
-    </div>
+        // 消息回调
+        this.onPlayerJoined = null;
+        this.onPlayerLeft = null;
+        this.onMessage = null;
+        this.onConnected = null;
+        this.onError = null;
+        this.onStatus = null;  // (status) => void - 'connecting' | 'connected' | 'error'
+    }
 
-    <!-- 房间等待界面 -->
-    <div id="room-screen" class="screen">
-        <div class="room-container">
-            <h2>房间：<span id="room-code-show" class="code"></span></h2>
-            <p class="hint">把房间号发给朋友</p>
+    static generateRoomCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return code;
+    }
 
-            <div class="player-list" id="player-list">
-                <h3>玩家列表</h3>
-                <ul id="players-ul"></ul>
-            </div>
+    // 创建房间（成为房主）
+    async createRoom() {
+        const code = Network.generateRoomCode();
+        return this._createWithCode(code);
+    }
 
-            <button id="start-game-btn" class="btn btn-primary btn-large" disabled>等待玩家...</button>
-            <button id="leave-room-btn" class="btn btn-secondary">离开房间</button>
-        </div>
-    </div>
+    // 用指定 code 创建（重试用）
+    async _createWithCode(code) {
+        this.roomCode = code;
+        const peerId = PREFIX + code;
+        this._safeDestroyPeer();  // 清理可能存在的旧 peer
 
-    <!-- 游戏界面 -->
-    <div id="game-screen" class="screen">
-        <canvas id="game-canvas"></canvas>
+        return new Promise((resolve, reject) => {
+            console.log('[Network] 正在创建房间:', code, 'peerId:', peerId);
 
-        <!-- HUD -->
-        <div id="hud" class="hud">
-            <div id="identity-badge" class="identity-badge">加载中...</div>
-            <div id="player-list-game" class="player-list-game"></div>
-            <div id="task-info" class="task-info hidden">
-                <h4>任务</h4>
-                <p id="task-text"></p>
-            </div>
-        </div>
+            if (this.onStatus) this.onStatus('connecting');
 
-        <!-- 动作轮盘按钮 -->
-        <button id="action-wheel-btn" class="action-wheel-btn">动作</button>
+            // 15 秒超时
+            this.connectTimeout = setTimeout(() => {
+                if (this.peer && !this.peer.open) {
+                    console.error('[Network] 连接超时');
+                    const err = new Error('连接超时（15秒）- PeerJS broker 不可达，请检查网络或翻墙');
+                    err.type = 'timeout';
+                    this._safeDestroyPeer();
+                    if (this.onError) this.onError(err);
+                    if (this.onStatus) this.onStatus('error');
+                    reject(err);
+                }
+            }, 15000);
 
-        <!-- 动作轮盘 -->
-        <div id="action-wheel" class="action-wheel hidden">
-            <div class="wheel-bg"></div>
-            <div class="wheel-options">
-                <div class="wheel-option" data-action="yes" style="--angle: 0deg;">✓<br><span>是</span></div>
-                <div class="wheel-option" data-action="no" style="--angle: 45deg;">✗<br><span>否</span></div>
-                <div class="wheel-option" data-action="up" style="--angle: 90deg;">↑<br><span>上</span></div>
-                <div class="wheel-option" data-action="right" style="--angle: 135deg;">→<br><span>右</span></div>
-                <div class="wheel-option" data-action="down" style="--angle: 180deg;">↓<br><span>下</span></div>
-                <div class="wheel-option" data-action="left" style="--angle: 225deg;">←<br><span>左</span></div>
-                <div class="wheel-option" data-action="wait" style="--angle: 270deg;">⏸<br><span>等</span></div>
-                <div class="wheel-option" data-action="help" style="--angle: 315deg;">❓<br><span>帮</span></div>
-            </div>
-        </div>
+            this.peer = new Peer(peerId, {
+                host: BROKER_HOST,
+                port: BROKER_PORT,
+                path: BROKER_PATH,
+                key: BROKER_KEY,
+                config: {
+                    iceServers: ICE_SERVERS,
+                    iceTransportPolicy: 'all',
+                },
+                debug: 2,  // 0=无, 1=错, 2=警告, 3=全部
+                secure: true,
+            });
 
-        <!-- 移动摇杆（左下）-->
-        <div id="joystick-zone" class="joystick-zone"></div>
+            this.peer.on('open', (id) => {
+                clearTimeout(this.connectTimeout);
+                this.myId = id;
+                this.isHost = true;
+                console.log('[Network] ✅ 房间创建成功:', id);
+                if (this.onStatus) this.onStatus('connected');
+                if (this.onConnected) this.onConnected();
+                resolve(code);
+            });
 
-        <!-- 视角控制提示（首次进入）-->
-        <div id="view-hint" class="view-hint">
-            <p>👆 拖动屏幕右侧控制视角</p>
-        </div>
-    </div>
+            this.peer.on('connection', (conn) => {
+                console.log('[Network] 收到新连接:', conn.peer);
+                this.handleIncomingConnection(conn);
+            });
 
-    <!-- 模块 -->
-    <script type="module" src="js/main.js"></script>
-</body>
-</html>
+            this.peer.on('error', (err) => {
+                clearTimeout(this.connectTimeout);
+                console.error('[Network] Peer 错误:', err.type, err.message);
+
+                // 特定错误处理
+                if (err.type === 'unavailable-id') {
+                    // ID 被占用，说明可能之前的 session 还没释放
+                    // 或者随机生成的 code 撞了
+                    console.warn('[Network] 房间号被占用，重试中...');
+                    this._safeDestroyPeer();
+                    // 重试一次
+                    setTimeout(() => {
+                        this._createWithCode(Network.generateRoomCode())
+                            .then(resolve)
+                            .catch(reject);
+                    }, 500);
+                    return;
+                }
+
+                if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
+                    err.friendlyMessage = '无法连接到游戏服务器。可能是：\n1. 网络问题（国内访问 PeerJS broker 可能不稳定）\n2. 需要翻墙\n3. 防火墙拦截';
+                } else if (err.type === 'peer-unavailable') {
+                    err.friendlyMessage = '找不到该房间，请检查房间号是否正确';
+                } else if (err.type === 'browser-incompatible') {
+                    err.friendlyMessage = '浏览器不支持 WebRTC，请使用 Chrome / Edge / Safari 最新版';
+                }
+
+                this._safeDestroyPeer();
+                if (this.onError) this.onError(err);
+                if (this.onStatus) this.onStatus('error');
+                reject(err);
+            });
+        });
+    }
+
+    // 加入房间
+    async joinRoom(code) {
+        this.roomCode = code.toUpperCase();
+        const hostPeerId = PREFIX + this.roomCode;
+        this._safeDestroyPeer();
+
+        return new Promise((resolve, reject) => {
+            console.log('[Network] 正在加入房间:', this.roomCode);
+
+            if (this.onStatus) this.onStatus('connecting');
+
+            this.connectTimeout = setTimeout(() => {
+                const err = new Error('连接超时（15秒）');
+                err.type = 'timeout';
+                this._safeDestroyPeer();
+                if (this.onError) this.onError(err);
+                if (this.onStatus) this.onStatus('error');
+                reject(err);
+            }, 15000);
+
+            this.peer = new Peer(undefined, {
+                host: BROKER_HOST,
+                port: BROKER_PORT,
+                path: BROKER_PATH,
+                key: BROKER_KEY,
+                config: {
+                    iceServers: ICE_SERVERS,
+                    iceTransportPolicy: 'all',
+                },
+                debug: 2,
+                secure: true,
+            });
+
+            this.peer.on('open', (myId) => {
+                console.log('[Network] 我的 Peer ID:', myId);
+                this.myId = myId;
+                this.isHost = false;
+
+                // 连接到房主
+                console.log('[Network] 正在连接房主:', hostPeerId);
+                const conn = this.peer.connect(hostPeerId, {
+                    reliable: true,
+                });
+
+                this.setupConnection(conn);
+
+                conn.on('open', () => {
+                    clearTimeout(this.connectTimeout);
+                    console.log('[Network] ✅ 已连接到房主');
+                    if (this.onStatus) this.onStatus('connected');
+                    if (this.onConnected) this.onConnected();
+                    resolve();
+                });
+
+                conn.on('error', (err) => {
+                    clearTimeout(this.connectTimeout);
+                    console.error('[Network] 连接错误:', err);
+                    if (this.onError) this.onError(err);
+                    if (this.onStatus) this.onStatus('error');
+                    reject(err);
+                });
+            });
+
+            this.peer.on('error', (err) => {
+                clearTimeout(this.connectTimeout);
+                console.error('[Network] Peer 错误:', err.type, err.message);
+
+                if (err.type === 'peer-unavailable') {
+                    err.friendlyMessage = '房间不存在或房主已断开，请检查房间号';
+                } else if (err.type === 'network' || err.type === 'server-error') {
+                    err.friendlyMessage = '无法连接到游戏服务器，可能需要翻墙';
+                }
+
+                this._safeDestroyPeer();
+                if (this.onError) this.onError(err);
+                if (this.onStatus) this.onStatus('error');
+                reject(err);
+            });
+        });
+    }
+
+    handleIncomingConnection(conn) {
+        conn.on('open', () => {
+            this.connections.set(conn.peer, conn);
+            if (this.onPlayerJoined) {
+                this.onPlayerJoined(conn.peer, {});
+            }
+        });
+        this.setupConnection(conn);
+    }
+
+    setupConnection(conn) {
+        conn.on('data', (data) => {
+            this.handleMessage(conn.peer, data);
+        });
+
+        conn.on('close', () => {
+            console.log('[Network] 玩家断开:', conn.peer);
+            this.connections.delete(conn.peer);
+            if (this.onPlayerLeft) this.onPlayerLeft(conn.peer);
+        });
+
+        conn.on('error', (err) => {
+            console.error('[Network] 连接错误:', err);
+        });
+    }
+
+    handleMessage(fromId, data) {
+        if (this.onMessage) {
+            this.onMessage(fromId, data.type, data.payload);
+        }
+    }
+
+    broadcast(type, payload) {
+        const msg = { type, payload };
+        this.connections.forEach((conn) => {
+            if (conn.open) {
+                conn.send(msg);
+            }
+        });
+    }
+
+    sendTo(peerId, type, payload) {
+        const conn = this.connections.get(peerId);
+        if (conn && conn.open) {
+            conn.send({ type, payload });
+        }
+    }
+
+    getAllPeers() {
+        return Array.from(this.connections.keys());
+    }
+
+    _safeDestroyPeer() {
+        if (this.connectTimeout) {
+            clearTimeout(this.connectTimeout);
+            this.connectTimeout = null;
+        }
+        if (this.peer) {
+            try {
+                this.peer.destroy();
+            } catch (e) {
+                // ignore
+            }
+            this.peer = null;
+        }
+    }
+
+    disconnect() {
+        this.connections.forEach((conn) => {
+            try { conn.close(); } catch (e) {}
+        });
+        this.connections.clear();
+        this._safeDestroyPeer();
+    }
+}
+// 3D 场景 - Three.js 第一视角
+// 
+// 包含：
+// - 3D 场景（地面、围墙、简单道具）
+// - 第一视角相机 + 控制器
+// - 移动端虚拟摇杆 + 屏幕拖动视角
+// - 玩家角色渲染（远端玩家用彩色立方体）
+// - 简单的厨房环境（W1 占位）
+
+// Three.js 通过 <script> 标签加载，全局可用
+// 注意：不要用 import 'three'，会破坏整个模块链
+
+window.GameScene = class GameScene {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.remotePlayers = new Map();  // peerId -> { mesh, name, color }
+        
+        // 本地玩家状态
+        this.localPlayer = {
+            position: new THREE.Vector3(0, 1.6, 0),  // 人眼高度
+            rotationY: 0,                              // 水平
+            rotationX: 0,                              // 垂直
+            velocity: new THREE.Vector3()
+        };
+        
+        // 输入状态
+        this.moveInput = new THREE.Vector2();  // 摇杆
+        this.lookInput = new THREE.Vector2();  // 视角
+        
+        // 移动速度
+        this.moveSpeed = 4.0;  // 米/秒
+        this.lookSensitivity = 0.002;
+        
+        this.lastFrameTime = 0;
+        this.running = false;
+        this.clock = new THREE.Clock();
+        
+        // 玩家颜色循环
+        this.playerColors = [
+            0xff6b6b,  // 红
+            0x4ecdc4,  // 青
+            0xffe66d,  // 黄
+            0xa8e6cf,  // 绿
+        ];
+        this.colorIndex = 0;
+    }
+    
+    // 初始化场景
+    init() {
+        // 场景
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x87ceeb);  // 天空蓝
+        this.scene.fog = new THREE.Fog(0x87ceeb, 20, 60);
+        
+        // 相机
+        this.camera = new THREE.PerspectiveCamera(
+            70,  // FOV
+            window.innerWidth / window.innerHeight,
+            0.1,
+            100
+        );
+        this.camera.position.copy(this.localPlayer.position);
+        
+        // 渲染器
+        this.renderer = new THREE.WebGLRenderer({
+            canvas: this.canvas,
+            antialias: true
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // 光照
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        this.scene.add(ambientLight);
+        
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        sunLight.position.set(10, 20, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.camera.left = -25;
+        sunLight.shadow.camera.right = 25;
+        sunLight.shadow.camera.top = 25;
+        sunLight.shadow.camera.bottom = -25;
+        this.scene.add(sunLight);
+        
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // 地面
+        const groundGeometry = new THREE.PlaneGeometry(40, 40);
+        const groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8b7355,
+            roughness: 0.9
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        this.scene.add(ground);
+        
+        // 网格地面（方便看距离）
+        const gridHelper = new THREE.GridHelper(40, 40, 0x4a4a4a, 0x6a6a6a);
+        gridHelper.position.y = 0.01;
+        this.scene.add(gridHelper);
+        
+        // 围墙（4 面）
+        this.buildWalls();
+        
+        // 厨房道具（占位）
+        this.buildKitchenProps();
+        
+        // 监听窗口大小
+        window.addEventListener('resize', () => this.onResize());
+    }
+    
+    buildWalls() {
+        const wallHeight = 4;
+        const wallThickness = 0.3;
+        const halfSize = 20;
+        
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xe8d4b0 });
+        
+        const walls = [
+            // 北墙
+            { pos: [0, wallHeight/2, -halfSize], size: [halfSize*2, wallHeight, wallThickness] },
+            // 南墙（开 2 个缺口）
+            { pos: [-8, wallHeight/2, halfSize], size: [8, wallHeight, wallThickness] },
+            { pos: [8, wallHeight/2, halfSize], size: [8, wallHeight, wallThickness] },
+            // 东墙
+            { pos: [halfSize, wallHeight/2, 0], size: [wallThickness, wallHeight, halfSize*2] },
+            // 西墙
+            { pos: [-halfSize, wallHeight/2, 0], size: [wallThickness, wallHeight, halfSize*2] }
+        ];
+        
+        walls.forEach(w => {
+            const geo = new THREE.BoxGeometry(...w.size);
+            const mesh = new THREE.Mesh(geo, wallMaterial);
+            mesh.position.set(...w.pos);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+        });
+    }
+    
+    buildKitchenProps() {
+        // 简单的厨房道具占位（W1 只做几何体）
+        const props = [
+            { pos: [-5, 0.5, -3], color: 0xd97706, name: '食材箱', size: [1, 1, 1] },
+            { pos: [-3, 0.4, -3], color: 0xa0522d, name: '菜板', size: [1.2, 0.1, 0.8] },
+            { pos: [-1, 0.4, -3], color: 0xa0522d, name: '菜板', size: [1.2, 0.1, 0.8] },
+            { pos: [1, 0.5, -3], color: 0x4a4a4a, name: '调味台', size: [2, 1, 0.8] },
+            // 灶台（中央长条，分隔场景）
+            { pos: [0, 0.5, 0], color: 0x2a2a2a, name: '灶台', size: [12, 1, 1.5] },
+            // 烹饪区
+            { pos: [-5, 0.5, 5], color: 0x1a1a1a, name: '煎锅', size: [1, 0.2, 1] },
+            { pos: [-3, 0.5, 5], color: 0x1a1a1a, name: '煎锅', size: [1, 0.2, 1] },
+            { pos: [0, 0.8, 5], color: 0xffd700, name: '出餐口', size: [1.5, 0.5, 1] },
+            { pos: [3, 0.5, 5], color: 0x60a5fa, name: '洗碗池', size: [1.5, 0.4, 1] }
+        ];
+        
+        props.forEach(p => {
+            const geo = new THREE.BoxGeometry(...p.size);
+            const mat = new THREE.MeshStandardMaterial({ color: p.color });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(...p.pos);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData.name = p.name;
+            this.scene.add(mesh);
+        });
+        
+        // 长条形灶台（视觉屏障）
+        const counterGeo = new THREE.BoxGeometry(12, 1.2, 1.5);
+        const counterMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
+        const counter = new THREE.Mesh(counterGeo, counterMat);
+        counter.position.set(0, 0.6, 0);
+        counter.castShadow = true;
+        counter.receiveShadow = true;
+        this.scene.add(counter);
+    }
+    
+    // 启动渲染循环
+    start() {
+        this.running = true;
+        this.lastFrameTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
+    }
+    
+    stop() {
+        this.running = false;
+    }
+    
+    loop(time) {
+        if (!this.running) return;
+        
+        const dt = Math.min((time - this.lastFrameTime) / 1000, 0.1);
+        this.lastFrameTime = time;
+        
+        this.updateLocalPlayer(dt);
+        this.updateCamera();
+        this.interpolateRemotePlayers(dt);
+        
+        this.renderer.render(this.scene, this.camera);
+        requestAnimationFrame((t) => this.loop(t));
+    }
+    
+    updateLocalPlayer(dt) {
+        // 移动（基于摇杆）
+        const forward = new THREE.Vector3(
+            -Math.sin(this.localPlayer.rotationY),
+            0,
+            -Math.cos(this.localPlayer.rotationY)
+        );
+        const right = new THREE.Vector3(
+            Math.cos(this.localPlayer.rotationY),
+            0,
+            -Math.sin(this.localPlayer.rotationY)
+        );
+        
+        const move = new THREE.Vector3();
+        move.addScaledVector(forward, this.moveInput.y);
+        move.addScaledVector(right, this.moveInput.x);
+        
+        if (move.lengthSq() > 0) {
+            move.normalize().multiplyScalar(this.moveSpeed * dt);
+            this.localPlayer.position.add(move);
+        }
+        
+        // 边界限制
+        this.localPlayer.position.x = Math.max(-19, Math.min(19, this.localPlayer.position.x));
+        this.localPlayer.position.z = Math.max(-19, Math.min(19, this.localPlayer.position.z));
+        this.localPlayer.position.y = 1.6;  // 眼睛高度固定
+    }
+    
+    updateCamera() {
+        this.camera.position.copy(this.localPlayer.position);
+        
+        // 应用视角旋转
+        const euler = new THREE.Euler(this.localPlayer.rotationX, this.localPlayer.rotationY, 0, 'YXZ');
+        this.camera.quaternion.setFromEuler(euler);
+    }
+    
+    interpolateRemotePlayers(dt) {
+        // 远端玩家位置插值
+        this.remotePlayers.forEach((player) => {
+            if (player.targetPos) {
+                player.mesh.position.lerp(player.targetPos, 0.15);
+            }
+            if (player.targetRotY !== undefined) {
+                // 平滑旋转
+                let diff = player.targetRotY - player.mesh.rotation.y;
+                while (diff > Math.PI) diff -= 2 * Math.PI;
+                while (diff < -Math.PI) diff += 2 * Math.PI;
+                player.mesh.rotation.y += diff * 0.15;
+            }
+        });
+    }
+    
+    // 输入处理
+    setMoveInput(x, y) {
+        this.moveInput.x = x;
+        this.moveInput.y = y;
+    }
+    
+    setLookInput(dx, dy) {
+        this.localPlayer.rotationY -= dx * this.lookSensitivity * 100;  // * 100 适配不同灵敏度
+        this.localPlayer.rotationX -= dy * this.lookSensitivity * 100;
+        // 限制垂直视角
+        this.localPlayer.rotationX = Math.max(-Math.PI/2 + 0.01, Math.min(Math.PI/2 - 0.01, this.localPlayer.rotationX));
+    }
+    
+    // 远端玩家管理
+    addRemotePlayer(peerId, name) {
+        if (this.remotePlayers.has(peerId)) return;
+        
+        const color = this.playerColors[this.colorIndex % this.playerColors.length];
+        this.colorIndex++;
+        
+        // 玩家身体（立方体 + 头部 + 名称）
+        const group = new THREE.Group();
+        
+        // 身体
+        const bodyGeo = new THREE.BoxGeometry(0.6, 1.2, 0.4);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.6;
+        body.castShadow = true;
+        group.add(body);
+        
+        // 头
+        const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.4;
+        head.castShadow = true;
+        group.add(head);
+        
+        // 头顶箭头（指示前方）
+        const arrowGeo = new THREE.ConeGeometry(0.15, 0.4, 4);
+        const arrowMat = new THREE.MeshStandardMaterial({ color: color });
+        const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+        arrow.position.set(0, 1.4, -0.5);
+        arrow.rotation.x = -Math.PI / 2;
+        group.add(arrow);
+        
+        this.scene.add(group);
+        
+        // 名称标签（HTML 形式，简单用 TextGeometry 不太好搞）
+        this.addNameLabel(group, name, color);
+        
+        const player = {
+            mesh: group,
+            name: name,
+            color: color,
+            targetPos: new THREE.Vector3(0, 0, 0),
+            targetRotY: 0
+        };
+        
+        this.remotePlayers.set(peerId, player);
+    }
+    
+    addNameLabel(parentGroup, name, color) {
+        // 创建 canvas 文字
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, 256, 64);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(name, 128, 32);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMat = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.position.y = 1.9;
+        sprite.scale.set(1.5, 0.4, 1);
+        parentGroup.add(sprite);
+    }
+    
+    removeRemotePlayer(peerId) {
+        const player = this.remotePlayers.get(peerId);
+        if (player) {
+            this.scene.remove(player.mesh);
+            this.remotePlayers.delete(peerId);
+        }
+    }
+    
+    updateRemotePlayer(peerId, data) {
+        const player = this.remotePlayers.get(peerId);
+        if (!player) return;
+        if (data.position) {
+            player.targetPos.set(data.position[0], 0, data.position[2]);
+        }
+        if (data.rotationY !== undefined) {
+            player.targetRotY = data.rotationY;
+        }
+    }
+    
+    // 获取本地玩家状态（用于同步）
+    getLocalState() {
+        return {
+            position: [this.localPlayer.position.x, this.localPlayer.position.y, this.localPlayer.position.z],
+            rotationY: this.localPlayer.rotationY
+        };
+    }
+    
+    onResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+}
+// 移动端 + PC 输入控制
+// 
+// 移动端：
+// - 屏幕左下 50% 区域：虚拟摇杆（控制移动）
+// - 屏幕右半区域：拖动（控制视角）
+// 
+// PC（调试）：
+// - WASD 移动
+// - 鼠标拖动视角
+
+window.InputController = class InputController {
+    constructor(canvas, joystickZone) {
+        this.canvas = canvas;
+        this.joystickZone = joystickZone;
+        this.onMove = null;  // (x, y) => void
+        this.onLook = null;  // (dx, dy) => void
+        
+        // 摇杆状态
+        this.joystickActive = false;
+        this.joystickCenter = { x: 0, y: 0 };
+        this.joystickTouch = null;
+        this.joystickRadius = 60;
+        
+        // 视角控制
+        this.lookTouch = null;
+        this.lastLookPos = { x: 0, y: 0 };
+        
+        this.init();
+    }
+    
+    init() {
+        // 触屏事件
+        this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
+        this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e), { passive: false });
+        this.canvas.addEventListener('touchcancel', (e) => this.onTouchEnd(e), { passive: false });
+        
+        // 鼠标事件（PC 调试）
+        let mouseDown = false;
+        let mouseButton = 0;
+        
+        this.canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            mouseButton = e.button;
+            if (e.clientX < window.innerWidth * 0.5) {
+                // 左半屏 = 摇杆
+                this.joystickActive = true;
+                this.joystickCenter = { x: e.clientX, y: e.clientY };
+                this.joystickTouch = 'mouse';
+            } else {
+                // 右半屏 = 视角
+                this.lookTouch = 'mouse';
+                this.lastLookPos = { x: e.clientX, y: e.clientY };
+            }
+        });
+        
+        this.canvas.addEventListener('mousemove', (e) => {
+            if (this.joystickActive && this.joystickTouch === 'mouse') {
+                this.updateJoystick(e.clientX, e.clientY);
+            }
+            if (this.lookTouch === 'mouse') {
+                const dx = e.clientX - this.lastLookPos.x;
+                const dy = e.clientY - this.lastLookPos.y;
+                if (this.onLook) this.onLook(dx, dy);
+                this.lastLookPos = { x: e.clientX, y: e.clientY };
+            }
+        });
+        
+        this.canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+            this.resetJoystick();
+            this.lookTouch = null;
+        });
+        
+        // 键盘（WASD 调试）
+        const keys = {};
+        window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+        
+        setInterval(() => {
+            if (keys['w'] || keys['arrowup']) this.updateMoveInput(0, 1);
+            else if (keys['s'] || keys['arrowdown']) this.updateMoveInput(0, -1);
+            else if (keys['a'] || keys['arrowleft']) this.updateMoveInput(-1, 0);
+            else if (keys['d'] || keys['arrowright']) this.updateMoveInput(1, 0);
+            else if (!this.joystickActive) this.updateMoveInput(0, 0);
+        }, 50);
+    }
+    
+    onTouchStart(e) {
+        e.preventDefault();
+        for (let touch of e.changedTouches) {
+            if (touch.clientX < window.innerWidth * 0.5) {
+                if (!this.joystickActive) {
+                    this.joystickActive = true;
+                    this.joystickCenter = { x: touch.clientX, y: touch.clientY };
+                    this.joystickTouch = touch.identifier;
+                }
+            } else {
+                if (this.lookTouch === null) {
+                    this.lookTouch = touch.identifier;
+                    this.lastLookPos = { x: touch.clientX, y: touch.clientY };
+                }
+            }
+        }
+    }
+    
+    onTouchMove(e) {
+        e.preventDefault();
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === this.joystickTouch) {
+                this.updateJoystick(touch.clientX, touch.clientY);
+            }
+            if (touch.identifier === this.lookTouch) {
+                const dx = touch.clientX - this.lastLookPos.x;
+                const dy = touch.clientY - this.lastLookPos.y;
+                if (this.onLook) this.onLook(dx, dy);
+                this.lastLookPos = { x: touch.clientX, y: touch.clientY };
+            }
+        }
+    }
+    
+    onTouchEnd(e) {
+        e.preventDefault();
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === this.joystickTouch) {
+                this.resetJoystick();
+            }
+            if (touch.identifier === this.lookTouch) {
+                this.lookTouch = null;
+            }
+        }
+    }
+    
+    updateJoystick(x, y) {
+        const dx = x - this.joystickCenter.x;
+        const dy = y - this.joystickCenter.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        let nx = dx, ny = dy;
+        if (dist > this.joystickRadius) {
+            nx = (dx / dist) * this.joystickRadius;
+            ny = (dy / dist) * this.joystickRadius;
+        }
+        
+        // 归一化到 -1..1
+        this.updateMoveInput(nx / this.joystickRadius, -ny / this.joystickRadius);
+    }
+    
+    updateMoveInput(x, y) {
+        if (this.onMove) this.onMove(x, y);
+    }
+    
+    resetJoystick() {
+        this.joystickActive = false;
+        this.joystickTouch = null;
+        this.updateMoveInput(0, 0);
+    }
+}
+// 主入口 - 整合所有模块
+// 
+// 流程：
+// 1. 大厅界面：创建/加入房间
+// 2. 房间界面：等待玩家，房主点开始
+// 3. 游戏界面：3D 第一视角 + 联机
+
+
+// ========== 全局错误捕获（显示在页面上，方便调试）==========
+window.addEventListener('error', (e) => {
+    console.error('[Global Error]', e.error);
+    const debugEl = document.getElementById('debug-overlay');
+    if (debugEl) {
+        debugEl.style.display = 'block';
+        debugEl.textContent = '❌ JS 错误: ' + (e.message || e.error?.message || 'unknown');
+    }
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('[Unhandled Rejection]', e.reason);
+    const debugEl = document.getElementById('debug-overlay');
+    if (debugEl) {
+        debugEl.style.display = 'block';
+        debugEl.textContent = '❌ Promise 错误: ' + (e.reason?.message || e.reason);
+    }
+});
+
+console.log('[Main] ✅ JS 已加载，准备就绪');
+
+// 全局状态
+const state = {
+    network: null,
+    scene: null,
+    input: null,
+    myName: 'Player',
+    myId: null,
+    players: new Map(),  // peerId -> { name, color, isHost }
+    identity: 'Unknown'  // 角色身份（MuteChef/DeafMessenger/BlindExecutor）
+};
+
+const PLAYER_COLORS = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf'];
+
+// ========== UI 切换 ==========
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+function setStatus(text, type = 'info') {
+    const el = document.getElementById('lobby-status');
+    el.textContent = text;
+    el.className = 'status ' + type;
+}
+
+// ========== 大厅逻辑 ==========
+document.getElementById('create-room-btn').addEventListener('click', async () => {
+    state.myName = document.getElementById('player-name').value.trim() || 'Player';
+    setStatus('正在创建房间...', 'info');
+    document.getElementById('create-room-btn').disabled = true;
+    document.getElementById('create-room-btn').textContent = '连接中...';
+
+    try {
+        // 如果之前有 network，先清理
+        if (state.network) {
+            state.network.disconnect();
+            state.network = null;
+        }
+        state.network = new window.Network();
+
+        // 网络事件
+        state.network.onConnected = () => {
+            const code = state.network.roomCode;
+            document.getElementById('generated-code').textContent = code;
+            document.getElementById('room-code-display').classList.remove('hidden');
+            document.getElementById('create-room-btn').textContent = '房间已创建';
+            setStatus('房间已创建！', 'success');
+            showScreen('room-screen');
+            document.getElementById('room-code-show').textContent = code;
+
+            // 添加自己
+            state.players.set(state.network.myId, {
+                name: state.myName,
+                color: PLAYER_COLORS[0],
+                isHost: true
+            });
+            updatePlayerListUI();
+            updateStartButton();
+        };
+
+        state.network.onPlayerJoined = (peerId) => {
+            console.log('[Main] 玩家加入:', peerId);
+            // 房主收到新玩家连接，发送欢迎消息
+            state.network.sendTo(peerId, 'welcome', {
+                hostName: state.myName,
+                players: Array.from(state.players.entries()).map(([id, p]) => ({
+                    id, name: p.name, color: p.color, isHost: p.isHost
+                }))
+            });
+        };
+
+        state.network.onPlayerLeft = (peerId) => {
+            console.log('[Main] 玩家离开:', peerId);
+            state.players.delete(peerId);
+            if (state.scene) {
+                state.scene.removeRemotePlayer(peerId);
+            }
+            updatePlayerListUI();
+            updateStartButton();
+        };
+
+        state.network.onMessage = (fromId, type, payload) => {
+            handleNetworkMessage(fromId, type, payload);
+        };
+
+        state.network.onError = (err) => {
+            const msg = err.friendlyMessage || err.message || ('错误: ' + (err.type || 'unknown'));
+            setStatus(msg, 'error');
+            console.error('[Main] 网络错误:', err);
+            // 重置按钮
+            document.getElementById('create-room-btn').disabled = false;
+            document.getElementById('create-room-btn').textContent = '重试创建房间';
+        };
+
+        await state.network.createRoom();
+    } catch (err) {
+        const msg = err.friendlyMessage || err.message || '创建失败';
+        setStatus(msg, 'error');
+        console.error('[Main] 创建失败:', err);
+        document.getElementById('create-room-btn').disabled = false;
+        document.getElementById('create-room-btn').textContent = '重试创建房间';
+    }
+});
+
+document.getElementById('join-room-btn').addEventListener('click', async () => {
+    state.myName = document.getElementById('player-name').value.trim() || 'Player';
+    const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+
+    if (code.length !== 6) {
+        setStatus('请输入 6 位房间号', 'error');
+        return;
+    }
+
+    setStatus('正在加入...', 'info');
+    document.getElementById('join-room-btn').disabled = true;
+    document.getElementById('join-room-btn').textContent = '连接中...';
+
+    try {
+        if (state.network) {
+            state.network.disconnect();
+            state.network = null;
+        }
+        state.network = new window.Network();
+
+        state.network.onConnected = () => {
+            setStatus('已加入房间！', 'success');
+            showScreen('room-screen');
+            document.getElementById('room-code-show').textContent = code;
+            state.players.set(state.network.myId, {
+                name: state.myName,
+                color: PLAYER_COLORS[state.players.size],
+                isHost: false
+            });
+            updatePlayerListUI();
+        };
+
+        state.network.onPlayerLeft = (peerId) => {
+            state.players.delete(peerId);
+            if (state.scene) {
+                state.scene.removeRemotePlayer(peerId);
+            }
+            updatePlayerListUI();
+        };
+
+        state.network.onMessage = (fromId, type, payload) => {
+            handleNetworkMessage(fromId, type, payload);
+        };
+
+        state.network.onError = (err) => {
+            const msg = err.friendlyMessage || err.message || ('错误: ' + (err.type || 'unknown'));
+            setStatus(msg, 'error');
+            console.error('[Main] 网络错误:', err);
+            document.getElementById('join-room-btn').disabled = false;
+            document.getElementById('join-room-btn').textContent = '重试加入';
+        };
+
+        await state.network.joinRoom(code);
+    } catch (err) {
+        const msg = err.friendlyMessage || err.message || '加入失败';
+        setStatus(msg, 'error');
+        console.error('[Main] 加入失败:', err);
+        document.getElementById('join-room-btn').disabled = false;
+        document.getElementById('join-room-btn').textContent = '重试加入';
+    }
+});
+
+// ========== 房间界面 ==========
+function updatePlayerListUI() {
+    const ul = document.getElementById('players-ul');
+    ul.innerHTML = '';
+    
+    state.players.forEach((player, id) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span><span class="player-color" style="background:${player.color}"></span>${player.name}</span>
+            ${player.isHost ? '<span class="player-host">房主</span>' : ''}
+        `;
+        ul.appendChild(li);
+    });
+    
+    // 游戏内 HUD
+    const gameUl = document.getElementById('player-list-game');
+    if (gameUl) {
+        gameUl.innerHTML = '';
+        state.players.forEach((player, id) => {
+            const chip = document.createElement('div');
+            chip.className = 'player-chip';
+            chip.style.borderLeftColor = player.color;
+            chip.textContent = player.name + (player.isHost ? ' 👑' : '');
+            gameUl.appendChild(chip);
+        });
+    }
+}
+
+function updateStartButton() {
+    const btn = document.getElementById('start-game-btn');
+    if (!state.network) return;
+    
+    if (state.network.isHost) {
+        btn.disabled = state.players.size < 2;
+        btn.textContent = state.players.size < 2 ? '至少需要 2 人' : '开始游戏';
+    } else {
+        btn.disabled = true;
+        btn.textContent = '等待房主开始...';
+    }
+}
+
+document.getElementById('start-game-btn').addEventListener('click', () => {
+    if (!state.network.isHost) return;
+    
+    // 随机分配身份
+    const identities = ['MuteChef', 'DeafMessenger', 'BlindExecutor'];
+    const shuffled = [...identities].sort(() => Math.random() - 0.5);
+    
+    let i = 0;
+    const assignments = [];
+    state.players.forEach((player, id) => {
+        assignments.push({
+            peerId: id,
+            identity: shuffled[i % shuffled.length]
+        });
+        i++;
+    });
+    
+    // 通知所有玩家开始
+    state.network.broadcast('startGame', {
+        assignments: assignments
+    });
+    
+    // 自己开始
+    const myAssignment = assignments.find(a => a.peerId === state.network.myId);
+    startGame(myAssignment.identity);
+});
+
+document.getElementById('leave-room-btn').addEventListener('click', () => {
+    if (state.network) state.network.disconnect();
+    state.network = null;
+    state.players.clear();
+    showScreen('lobby-screen');
+    // 重置
+    document.getElementById('create-room-btn').disabled = false;
+    document.getElementById('create-room-btn').textContent = '创建新房间';
+    document.getElementById('room-code-display').classList.add('hidden');
+    setStatus('', 'info');
+});
+
+// ========== 网络消息处理 ==========
+function handleNetworkMessage(fromId, type, payload) {
+    switch (type) {
+        case 'welcome':
+            // 新玩家加入时，房主发来的欢迎消息
+            state.players.clear();
+            payload.players.forEach(p => {
+                state.players.set(p.id, {
+                    name: p.name,
+                    color: p.color,
+                    isHost: p.isHost
+                });
+            });
+            updatePlayerListUI();
+            // 告诉房主我的存在
+            state.network.sendTo(fromId, 'hello', {
+                name: state.myName,
+                color: PLAYER_COLORS[state.players.size]
+            });
+            break;
+            
+        case 'hello':
+            // 房主收到 hello，把新玩家加入列表
+            const newColor = payload.color || PLAYER_COLORS[state.players.size];
+            state.players.set(fromId, {
+                name: payload.name,
+                color: newColor,
+                isHost: false
+            });
+            updatePlayerListUI();
+            updateStartButton();
+            break;
+            
+        case 'startGame':
+            // 房主广播开始
+            const myAssign = payload.assignments.find(a => a.peerId === state.network.myId);
+            if (myAssign) {
+                startGame(myAssign.identity);
+            } else {
+                console.warn('没有分配到身份');
+            }
+            break;
+            
+        case 'position':
+            // 其他玩家位置更新
+            if (state.scene) {
+                state.scene.updateRemotePlayer(fromId, payload);
+            }
+            break;
+            
+        case 'action':
+            // 动作轮盘
+            showActionIndicator(fromId, payload.action);
+            break;
+    }
+}
+
+// ========== 游戏开始 ==========
+function startGame(identity) {
+    state.identity = identity;
+    showScreen('game-screen');
+    
+    // 初始化 3D 场景
+    const canvas = document.getElementById('game-canvas');
+    state.scene = new window.GameScene(canvas);
+    state.scene.init();
+    
+    // 创建远端玩家
+    state.players.forEach((player, id) => {
+        if (id !== state.network.myId) {
+            state.scene.addRemotePlayer(id, player.name);
+        }
+    });
+    
+    // 输入
+    state.input = new window.InputController(canvas, document.getElementById('joystick-zone'));
+    state.input.onMove = (x, y) => state.scene.setMoveInput(x, y);
+    state.input.onLook = (dx, dy) => state.scene.setLookInput(dx, dy);
+    
+    // 启动渲染
+    state.scene.start();
+    
+    // 启动位置同步
+    startPositionSync();
+    
+    // 设置身份显示
+    const badge = document.getElementById('identity-badge');
+    const identityMap = {
+        'MuteChef': '🧑‍🍳 哑巴厨师长',
+        'DeafMessenger': '🧏 聋子传令官',
+        'BlindExecutor': '🙈 盲人执行者'
+    };
+    badge.textContent = identityMap[identity] || '未知身份';
+    updatePlayerListUI();
+}
+
+function startPositionSync() {
+    setInterval(() => {
+        if (!state.scene || !state.network) return;
+        const localState = state.scene.getLocalState();
+        state.network.broadcast('position', localState);
+    }, 50);  // 20Hz
+}
+
+// ========== 动作轮盘 ==========
+const wheel = document.getElementById('action-wheel');
+const wheelBtn = document.getElementById('action-wheel-btn');
+
+wheelBtn.addEventListener('click', () => {
+    wheel.classList.toggle('hidden');
+});
+
+wheel.querySelectorAll('.wheel-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+        const action = opt.dataset.action;
+        // 发送动作
+        if (state.network) {
+            state.network.broadcast('action', { action: action });
+        }
+        showActionIndicator('me', action);
+        wheel.classList.add('hidden');
+    });
+});
+
+function showActionIndicator(peerId, action) {
+    const actionMap = {
+        'yes': '✓', 'no': '✗',
+        'up': '↑', 'down': '↓', 'left': '←', 'right': '→',
+        'wait': '⏸', 'help': '❓'
+    };
+    
+    // 简单 toast 显示
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.8);
+        color: #ffd700;
+        font-size: 80px;
+        padding: 20px 40px;
+        border-radius: 20px;
+        z-index: 100;
+        pointer-events: none;
+    `;
+    toast.textContent = actionMap[action] || '?';
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.5s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 1000);
+}
+</script>
+</body></html>
